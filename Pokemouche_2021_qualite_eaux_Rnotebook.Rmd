@@ -1,0 +1,694 @@
+---
+title: "Analyse des données de qualité de l'eau de la rivière Pokemouche 2021"
+authors: "Jean-Luc Boudreau, Alain Patoine"
+date: "2022-02-24"
+output:
+  html_document:
+    df_print: paged
+editor_options: 
+  chunk_output_type: console
+---
+
+# Historique des versions de fichiers Excel
+
+## Historique partie 1
+
+En février 2022, Jean-Luc m'envoie les fichiers de données suivants
+pour l'année 2021; chaque fichier correspond à une date différente de
+l'année 2021:
+
+- Excel SW - 5 octobre 2021.xls, 
+- SW - 28 juillet 2021.xls
+- SW - 28 octobre 2021.xls
+- SW - 28 octobre 2021.xls
+
+![](./DataFile_Pokemouche_original_JLB_2022-01-20.png)
+
+Je les réarrange dans un seul fichier, de manière à avoir les stations-dates 
+en rangées et les paramètres en colonnes: "Pokemouche_2021_qualite_eaux.csv". 
+À ma demande, Jean-Luc fait de même avec les données de 2001-2001 
+(son courriel du 2022-02-03).  
+
+![](./DataFile_Pokemouche_JLB_AP_2022-01-20.png)
+
+
+## Historique, partie 2
+
+Réception du fichier XLSX  (150 x 30), tel qu'arrangé par JLB selon 
+le même format que ci-dessus, reçu 2022-02-03 (avant la saison 2022).
+
+![](./DataFile_Pokemouche_JLB_2022-02-03.png)
+
+Le fichier présente parfois des point décimaux (2021 et après), 
+parfois des virgules décimales (2001-2002). 
+J'ai tout remplacé par des virgules décimales.
+
+Les variables qui présentent des éléments textuels comme le symbole
+"plus petit que" (<, indiquant la limite de détection)
+sont traitées comme des caractères (class
+"character"). Je les ai supprimés dans le fichier Excel même, comme j'ai supprimé
+tous les traits "--" qui indiquent l'absence de données.
+
+## Historique, partie 3
+
+Jean-Luc m'envoie par courriel le 2023-12-21 le fichier incluant les données 
+les plus récentes de 2022: "Qualité eau CGERP - 2001-2022.xlsx"
+
+2024-03-19: je formate les en-têtes pour qu'ils soient lisibles par R, 
+contrairement aux script précédents où les en-têtes ont été laissés tel quel 
+et R les a transformés à sa manière. Dans Excel, je fais également une 
+recherche pour trouver "--" et les remplacer par du vide (absence de données).
+
+# 0) Charger les données et les librairies
+
+
+```{r Tableau}
+library("ggpubr") # pour la fonction ggarrange 
+# ggpubr qui permet de rassembler plusieurs plots
+library("ggplot2") # to do sophisticated ("high-level") plots
+# library("stats") # 
+# rm(list=ls(all=TRUE)) # to erase, remove, delete objects from environment
+oldpar=par(no.readonly=TRUE) # to keep original graphical parameters
+
+# Sur poste maison Linux:
+# setwd("/media/alain/ap2To/UMCS_bak/Documents/RECHERCHE/Pokemouche_2021_analyses")
+
+# Sur poste UMCS Win10:
+# setwd("C:/Users/alain/Documents/RECHERCHE/Pokemouche_2021_echantillonnage_20_ans")
+
+```
+
+```{r}
+(.packages()) # to list loaded libraries at startup.
+
+.libPaths() # where libraries read from.
+
+# installed.packages()
+# or...
+# .packages(all.available = TRUE) # to list all packages installed
+# ... but not necessarily loaded with command "library"
+
+# library() # list available libraries (not necessarily loaded)
+# library(lib.loc=.Library)
+system.file(package='stats') # to check where is package
+find.package("utils")
+# (.packages()) # to list loaded libraries
+```
+
+
+
+# 1) Traiter le tableau d'entrée
+
+```{r}
+Pok2001.2022=read.csv2("Qualite_eau_CGERP_2001-2022.csv")
+dim(Pok2001.2022) # 198 rangées x 80 colonnes
+str(Pok2001.2022)
+
+```
+
+En théorie, le tableau devrait comprendre 12 stations x 4 années x 
+4 sorties/année = 192 objets "stations-dates". Comprendre pourquoi
+le fichier contient 198 rangées plutôt que 192.
+
+```{r, echo=T}
+# Lire les premières lignes de la variables "AnalysisSurfaceWater":
+head(Pok2001.2022$AnalysisSurfaceWater)
+
+# Uniformiser la variable "AnalysisSurfaceWater" et l'attribuer à la
+# nouvelle variable "Station":
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-1"] <- "Pok-01"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-1"] <- "Pok-01"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-2"] <- "Pok-02"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-2"] <- "Pok-02"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-3"] <- "Pok-03"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-3"] <- "Pok-03"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-4"] <- "Pok-04"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-4"] <- "Pok-04"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-5"] <- "Pok-05"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-5"] <- "Pok-05"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-6"] <- "Pok-06"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-6"] <- "Pok-06"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-7"] <- "Pok-07"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-7"] <- "Pok-07"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-8"] <- "Pok-08"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-8"] <- "Pok-08"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-9"] <- "Pok-09"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-9"] <- "Pok-09"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-10"] <- "Pok-10"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-10"] <- "Pok-10"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-11"] <- "Pok-11"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-11"] <- "Pok-11"
+
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="Pok-12"] <- "Pok-12"
+Pok2001.2022$Station[Pok2001.2022$AnalysisSurfaceWater=="POK-12"] <- "Pok-12"
+
+head(Pok2001.2022$Station)
+# Convertir le type de la variable "Station" en type "facteur" 
+Pok2001.2022$Station=as.factor(Pok2001.2022$Station)
+summary(Pok2001.2022$Station)
+
+# Créer la nouvelle variable "Station2" avec des variables plus parlantes:
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-01"] <- "br. sud amont 01"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-02"] <- "Suggary 02"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-03"] <- "Branche sud aval 03"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-04"] <- "Pok amont 04"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-05"] <- "McConnell Six Rd 05"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-06"] <- "Morrison 06"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-07"] <- "Waugh sanct. 07"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-08"] <- "Sewell 08"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-09"] <- "Trout Val-Doucet 09"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-10"] <- "Pollard 10"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-11"] <- "Malt 11"
+Pok2001.2022$Station2[Pok2001.2022$Station=="Pok-12"] <- "Dempsey 12"
+
+# Ordonner les valeurs de la variables "Station2" de l'amont vers l'aval:
+Pok2001.2022$Station2=ordered(Pok2001.2022$Station2,
+levels=c("Pok amont 04",      "Suggary 02",          "Morrison 06", 
+         "br. sud amont 01",  "Branche sud aval 03", "Trout Val-Doucet 09", 
+         "Sewell 08",         "Dempsey 12",          "Pollard 10",
+         "Malt 11",           "Waugh sanct. 07",     "McConnell Six Rd 05"))
+
+summary(Pok2001.2022$Station2)
+
+# Lister les noms de variables (en-têtes des colonnes):
+names(Pok2001.2022)
+# Rechercher les variables comportant le mot "date":
+names(Pok2001.2022[grep("date",names(Pok2001.2022), ignore.case=T)])
+# Trois (3) variables de dates:
+head(Pok2001.2022$DateSampled)
+head(Pok2001.2022$DateSampled2)
+head(Pok2001.2022$Datesampled3)
+class(Pok2001.2022$DateSampled)
+
+# Créer la nouvelle variable "Date" au format "date".
+Pok2001.2022$Date=format(as.Date(Pok2001.2022$DateSampled,format="%Y-%m-%d"))
+Pok2001.2022$Date=as.Date(Pok2001.2022$Date)
+summary(Pok2001.2022$Date)
+
+# Extraire les éléments d'année et en faire une variable "Year"
+# https://stackoverflow.com/questions/36568070/extract-year-from-date
+Pok2001.2022$Year=as.factor(format(Pok2001.2022$Date, "%Y"))
+summary(Pok2001.2022$Year)
+table(Pok2001.2022$Year,Pok2001.2022$Station)
+
+# Créer une variable "Period" qui désigne la période 2001-2002 ou 2021-2022.
+Pok2001.2022$Period[Pok2001.2022$Year==2001] <- "2001-2002"
+Pok2001.2022$Period[Pok2001.2022$Year==2002] <- "2001-2002"
+Pok2001.2022$Period[Pok2001.2022$Year==2021] <- "2021-2022"
+Pok2001.2022$Period[Pok2001.2022$Year==2022] <- "2021-2022"
+Pok2001.2022$Period=as.factor(Pok2001.2022$Period)
+
+summary(Pok2001.2022$Period)
+# Nous avons 102 enregistrements (rangées) pour la période 2001-2002
+# et 96 pour la période 2021-2022
+
+```
+
+## 1.1) Comprendre la structure du tableau
+
+```{r}
+# La fonction "table" produit un tableau de contingence 
+# indiquant le nombre de rangées de données pour chaque combinaison:
+table(Pok2001.2022$Date, Pok2001.2022$Year)
+
+table(Pok2001.2022$Station, Pok2001.2022$Year)
+# À chaque année, chaque station a été visitée 4 ou 5 fois.
+
+```
+
+## 1.2) Créer des sous-groupes par tributaire
+
+```{r tributaires, echo=T, eval=F}
+
+Malt=subset(Pok2001.2022, Station2=="Malt 11")
+dim(Malt) # 16 x 85
+summary(Malt$Date)
+
+# ... faire de même pour les onze autres stations (pendant l'été 2024).
+
+```
+
+
+# 2) Analyser les données
+
+
+## Dureté
+
+### Examiner les données
+
+```{r}
+
+hist(Pok2001.2022$Hardness_as_CaCO3_mg_L)
+
+# Comparer 2001-2002 à 2021-2022
+boxplot(Pok2001.2022$Hardness_as_CaCO3_mg_L ~ Pok2001.2022$Period)
+
+```
+
+Gaël: assure-toi de savoir comment interpréter un tel box-plot: que signifie
+la ligne médiane, la boîte et les "moustaches".
+
+Les valeurs de dureté en 2021-2022 sont légèrement inférieures à celles de
+2001-2002.
+
+Obtenir des statistiques par période avec la fonction "tapply"
+
+```{r}
+
+tapply(Pok2001.2022$Hardness_as_CaCO3_mg_L, Pok2001.2022$Period, summary)
+
+```
+
+En moyenne, la dureté en 2021-2022 (44 mg CaCO3/L) est plus faible qu'en
+2001-2002 (48 mg/L). Cette différence est-elle imputable à l'erreur 
+d'échantillonnage (hypothèse nulle H0) ou bien à des forces hydrologiques,
+biologiques, physiques, chimiques, sociologiques, psychologiques ou autres 
+(hypothèse alterne H1)?
+
+### Vérifier les conditions d'application d'un test de t
+
+```{r}
+shapiro.test(Pok2001.2022$Hardness_as_CaCO3_mg_L)
+
+qqnorm(Pok2001.2022$Hardness_as_CaCO3_mg_L)
+qqline(Pok2001.2022$Hardness_as_CaCO3_mg_L)
+
+```
+
+Les valeurs extrêmes sont plus fréquentes (ou plus extrêmes) qu'attendues 
+si les données devaient suivre une distribution normale.
+
+Même si les données ne sont pas normalement distriuées, tentons un test de t
+pour voir si la différence de dureté entre époques est attribuable au hasard
+de l'échantillonnage.
+
+Comme les mêmes "individus" (stations) sont mesurés avant et après, 
+il nous faut un test de t "apparié" (diapo 79).
+
+```{r}
+# Créer deux groupes de même taille
+# car le test de t suppose des groupes de même taille.
+
+Hard2001.2002=subset(Pok2001.2022, Period=="2001-2002", 
+                     select="Hardness_as_CaCO3_mg_L")
+class(Hard2001.2002)
+dim(Hard2001.2002) # 102 rangées x 1 colonne
+# Ne prendre que les 96 premières rangées pour que la série soit
+# d'égale longueur au groupe 2021-2022
+groupe1Hard=Hard2001.2002[1:96,]
+groupe1Hard
+length(groupe1Hard)
+
+Hard2021.2022=subset(Pok2001.2022, Period=="2021-2022", 
+                     select="Hardness_as_CaCO3_mg_L")
+dim(Hard2021.2022) # 96 rangées x 1 colonne
+groupe2Hard=Hard2021.2022[1:96,]
+length(groupe2Hard)
+
+t.test(groupe1Hard, groupe2Hard, paired=T)
+
+```
+
+La valeur p=0.015 représente la probabilité que l'hypothèse nulle soit vraie. 
+Comme elle est inférieure au seuil de signification généralement utilisé de 5%, 
+on décide de... accepter ou rejeter Ho??? On s'en reparle demain (2024-04-05 
+vendredi).
+
+
+## Fluore
+
+
+```{r Fluoride, eval=F}
+
+# Lister les valeurs de la variable:
+Pok2001.2022$Fluoride_mg_L
+
+# Convertir les cas sous la limite de détection à la moitié de la limite:
+Pok2001.2022$Fluoride2_mg_L=ifelse(Pok2001.2022$Fluoride_mg_L==0.1, 0.05, Pok2001.2022$Fluoride_mg_L)
+class(Pok2001.2022$Fluoride2_mg_L)
+subset(Pok2001.2022, select=c(Station, Date, Fluoride_mg_L ,Fluoride2_mg_L))
+
+summary(Pok2001.2022$Fluoride_mg_L);summary(Pok2001.2022$Fluoride2_mg_L)
+# Noter la moyenne plus faible pour la variable 2.
+
+
+```
+
+### Fluore: box-plot par période
+
+```{r, fig=T}
+
+ggplot(aes(y=Fluoride2_mg_L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+```
+
+### Fluore: box-plot par période et station
+
+```{r, fig=T}
+
+ggplot(aes(y=Fluoride2_mg_L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+```
+
+### Fluore à Maltempec
+
+```{r}
+
+Fluore2001.2002=ggplot(aes(y=Fluoride2_mg_L, x=Date), data=Malt) + 
+  geom_line(color="blue") + geom_point(color="blue", size=3) +
+  ggtitle("Concentration de fluore, station POK-11 Maltempec 2001 à 2022") +
+   scale_x_date(date_labels="%b %Y", breaks = scales::breaks_pretty(11),
+                limits = as.Date(c('2001-07-01','2002-12-01'))) +
+     theme(axis.text=element_text(size=14), axis.title=element_text(size=14))
+Fluore2001.2002
+
+Fluore2021.2022=ggplot(aes(y=Fluoride2_mg_L, x=Date), data=Malt) + 
+  geom_line(color="blue") + geom_point(color="blue", size=3) +
+  ggtitle("Concentration de fluore, station POK-11 Maltempec 2001 à 2022") +
+   scale_x_date(date_labels="%b %Y", breaks = scales::breaks_pretty(11),
+                limits = as.Date(c('2021-07-01','2022-12-01'))) +
+     theme(axis.text=element_text(size=14), axis.title=element_text(size=14))
+Fluore2021.2022
+
+# Placer côte à côte les graphiques avec la fonction "ggarrange"
+ggarrange(Fluore2001.2002, Fluore2021.2022, nrow=1, ncol=2)
+
+```
+
+## Oxygène dissous à la station Maltempec
+
+```{r, echo=T, eval=F}
+Pok2001.2022$Oxyg_dissous_YSI_mg_L
+
+Malt$Oxyg_dissous_YSI_mg_L
+
+subset(Malt, select=c(Station, Station2, Date, Oxyg_dissous_YSI_mg_L))
+
+ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date, group=1), data=Malt) + 
+  geom_point() +
+  geom_line() +
+   ggtitle("Concentration d'oxygène dissous, station POK-11 Maltempec 2001 à 2022") +
+  scale_x_date(date_labels="%Y", breaks = scales::breaks_pretty(10)) +
+  theme(axis.text=element_text(size=14), axis.title=element_text(size=14))
+
+
+```
+
+
+## Sulfate
+
+```{r Sulfate}
+
+Pok2001.2022$Sulfate2_mg.L=ifelse(Pok2001.2022$Sulfate2_mg.L==1, 0.5, Pok2001.2022$Sulfate2_mg.L)
+summary(Pok2001.2022$Sulfate2_mg.L)
+head(subset(Pok2001.2022,select=c(Sulfate_mg.L,Sulfate2_mg.L)))
+summary(Pok2001.2022$Sulfate2_mg.L)
+
+ggplot(aes(y=Sulfate2_mg.L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+ggplot(aes(y=Sulfate2_mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+
+```
+
+## Ammonia (seulement en 2001 et 2002)
+
+```{r Ammonia}
+
+
+Pok2001.2022$Ammonia2.N._mg.L=ifelse(Pok2001.2022$Ammonia2.N._mg.L==0.05, 0.025, Pok2001.2022$Ammonia2.N._mg.L)
+Pok2001.2022$Ammonia2.N._mg.L=ifelse(Pok2001.2022$Ammonia2.N._mg.L==0.01, 0.005, Pok2001.2022$Ammonia2.N._mg.L)
+subset(Pok2001.2022,select=c(Ammonia..as.N._mg.L,Ammonia2.N._mg.L))
+# sapply(Moncton, function(x)(sum(is.na(x)))) # NA counts
+# List cases where Ammonia is not lower than detection limit
+subset(Pok2001.2022,!grepl("<", Pok2001.2022$Ammonia..as.N._mg.L) & !is.na(Pok2001.2022$Ammonia2.N._mg.L),select=c(Year, Ammonia..as.N._mg.L,Ammonia2.N._mg.L))
+tamm=subset(Pok2001.2022,!grepl("<", Pok2001.2022$Ammonia..as.N._mg.L) & !is.na(Pok2001.2022$Ammonia2.N._mg.L))
+dim(tamm)
+
+summary(Pok2001.2022$Ammonia2.N._mg.L)
+
+sum(is.na(Pok2001.2022$Ammonia2.N._mg.L  ))
+dim(Pok2001.2022)
+# sapply(Pok2001.2022, function(x)(sum(is.na(x)))) # NA counts
+
+ggplot(aes(y=Ammonia2.N._mg.L, x=Station2, fill=Period), data=tamm) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+    ggtitle("Seulement 21 données (2001-2002) sont supérieures à la limite de détection")
+
+# Un.ionized...20ºC_mg.L
+# Nitrate...Nitrite..as.N._mg.L
+# Nitrite..as.N._mg.L
+# Nitrate..as.N._mg.L
+```
+
+## Nitrite et nitrate (2022 seulement)
+
+```{r NOx}
+
+Pok2001.2022$NOx_mg.L=ifelse(Pok2001.2022$NOx_mg.L==0.05, 0.025, Pok2001.2022$NOx_mg.L)
+subset(Pok2001.2022,select=c(Year, Nitrate...Nitrite..as.N._mg.L, NOx_mg.L))
+subset(Pok2001.2022,select=c(Nitrate...Nitrite..as.N._mg.L, NOx_mg.L))[sample(x=seq(1,length(Pok2001.2022),1), size=5),]
+summary(Pok2001.2022$NOx_mg.L)
+dim(subset(Pok2001.2022,NOx_mg.L>0,03))
+
+ggplot(aes(y=NOx_mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+    ggtitle("Neuf valeurs (sur 48) sont sous la limite de détection de 0,05; elles sont replacées par 0,025")
+
+```
+
+## Phosphorus
+
+
+```{r Phosphorus2}
+
+
+Pok2001.2022$Phosphorus2_mg.L=ifelse(Pok2001.2022$Phosphorus2_mg.L==0.005, 0.0025, Pok2001.2022$Phosphorus2_mg.L)
+subset(Pok2001.2022,select=c(Phosphorus...Total_mg.L,Phosphorus2_mg.L))[sample(x=seq(1,length(Pok2001.2022),1), size=5),]
+summary(Pok2001.2022$Phosphorus2_mg.L)
+
+ggplot(aes(y=Phosphorus2_mg.L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+ggplot(aes(y=Phosphorus2_mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) + ylab("Phosphore total (mg/L)")
+
+
+
+```
+ 
+## E.coli 2001-2021
+
+```{r E.coli}
+
+
+Pok2001.2022$E.Coli2.MPN.100.mL=ifelse(Pok2001.2022$E.Coli2.MPN.100.mL==10, 5, Pok2001.2022$E.Coli2.MPN.100.mL)
+subset(Pok2001.2022,select=c(E..Coli..MPN.100.mL.,E.Coli2.MPN.100.mL))[sample(x=seq(1,length(Pok2001.2022),1), size=5),]
+summary(Pok2001.2022$E.Coli2.MPN.100.mL)
+
+# Noter que la valeur de 2000 est en fait > 2000
+# par(mar = c(15, 4, 4, 2) + 0.1) 
+# summary(Pok2001.2022$Station2)
+# levels(Pok2001.2022$Station2)
+# boxplot(Pok2001.2022$E.Coli2.MPN.100.mL~Pok2001.2022$Date)
+# as.character(Pok2001.2022$Station2)
+
+# par(mar = c(7, 4, 2, 2) + 0.1) 
+# boxplot(Pok2001.2022$E.Coli2.MPN.100.mL~Pok2001.2022$Station2, las=2)
+# library("ggplot2") # to use ggplot
+
+ggplot(aes(y=E.Coli2.MPN.100.mL, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+ggplot(aes(y=E.Coli2.MPN.100.mL, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+```
+
+## Carbon...Total.Organic_mg.L
+
+```{r Carboneorg}
+
+
+Pok2001.2022$Carbone2.org_mg.L=ifelse(Pok2001.2022$Carbone2.org_mg.L==1, 0.5, Pok2001.2022$Carbone2.org_mg.L)
+subset(Pok2001.2022,select=c(Carbon...Total.Organic_mg.L,Carbone2.org_mg.L))[sample(x=seq(1,length(Pok2001.2022),1), size=5),]
+summary(Pok2001.2022$Carbone2.org_mg.L)
+subset(Pok2001.2022,is.na(Carbone2.org_mg.L), select=c(Station,Date, Carbon...Total.Organic_mg.L, Carbone2.org_mg.L))
+
+
+ggplot(aes(y=Carbone2.org_mg.L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+ggplot(aes(y=Carbone2.org_mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+```
+
+
+
+## Colour_TCU
+
+```{r Couleur}
+
+
+subset(Pok2001.2022,select=c(Colour_TCU,Couleur2_TCU))[sample(x=seq(1,length(Pok2001.2022),1), size=5),]
+summary(Pok2001.2022$Couleur2_TCU)
+
+
+ggplot(aes(y=Couleur2_TCU, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+   ggtitle("Recommandations pour la qualité de l'eau potable au Canada < 15 TCU")
+
+ggplot(aes(y=Couleur2_TCU, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+   ggtitle("Recommandations pour la qualité de l'eau potable au Canada < 15 TCU")
+
+
+```
+
+## Turbidity_NTU
+
+```{r Turbidity}
+
+summary(Pok2001.2022$Turbidity_NTU)
+
+
+ggplot(aes(y=Turbidity_NTU, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+  scale_y_continuous(limits=c(0,10)) +
+  ggtitle("Une valeur à 45 en 2001-2002")
+
+ggplot(aes(y=Turbidity_NTU, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+  scale_y_continuous(limits=c(0,10)) +
+  ggtitle("Une valeur à 45 en 2001-2002") 
+
+
+```
+
+## pH
+
+```{r pH}
+
+summary(Pok2001.2022$pH_units)
+
+
+ggplot(aes(y=pH_units, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) 
+
+ggplot(aes(y=pH_units, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+```
+
+## Total dissolved solids
+
+"Overall average concentration for total dissolved solids in the Miramichi River Basin is 22 mg/L" Chadwick 1995: 29.
+
+```{r TDS}
+summary(Pok2001.2022$TDS..calc._mg.L)
+
+
+ggplot(aes(y=TDS..calc._mg.L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+        ggtitle("Solides totaux dissous (mg/L)")
+
+ggplot(aes(y=TDS..calc._mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+
+```
+
+## Aluminium
+
+```{r Aluminium}
+
+summary(Pok2001.2022$Aluminum_mg.L)
+
+
+ggplot(aes(y=Aluminum_mg.L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+  ggtitle("La concentration maximale acceptable (CMA) d'aluminium total dans l'eau potable est de 2,9 mg/L")
+
+ggplot(aes(y=Aluminum_mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+  ggtitle("La concentration maximale acceptable (CMA) d'aluminium total dans l'eau potable est de 2,9 mg/L")
+
+```
+
+## Fer
+
+```{r Fe2}
+
+summary(Pok2001.2022$Iron_mg.L)
+
+
+ggplot(aes(y=Iron_mg.L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+  ggtitle("«Au Canada, la concentration de fer dans les eaux de surface est généralement inférieure à 10 mg/L» ")
+
+ggplot(aes(y=Iron_mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+  ggtitle("«Au Canada, la concentration de fer dans les eaux de surface est généralement inférieure à 10 mg/L» ")
+
+
+```
+
+## Oxygène dissous
+
+```{r O2}
+
+Pok2001.2022$Oxyg_dissous_YSI_mg_L
+
+
+summary(Pok2001.2022$Oxyg_dissous_YSI_mg_L)
+
+ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) 
+
+ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Station2, fill=Period), data=Pok2001.2022) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))
+
+```
+
+
