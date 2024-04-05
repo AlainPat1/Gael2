@@ -9,6 +9,7 @@ editor_options:
   chunk_output_type: console
 ---
 
+# Insertion de cette ligne pour tester git depuis le poste Linux maison 2024-04-04 soir.
 # Historique des versions de fichiers Excel
 
 ## Historique partie 1
