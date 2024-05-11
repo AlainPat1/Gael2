@@ -10,6 +10,7 @@ editor_options:
 ---
 
 # Insertion de cette ligne pour tester git depuis le poste Linux maison 2024-04-04 soir.
+# Encore un commentaire 2024-05-10 bb
 # Historique des versions de fichiers Excel
 
 ## Historique partie 1
