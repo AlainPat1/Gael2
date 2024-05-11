@@ -235,12 +235,16 @@ table(Pok2001.2022$Station, Pok2001.2022$Year)
 
 ## 1.2) Créer des sous-groupes par tributaire
 
-```{r tributaires, echo=T, eval=F}
+```{r tributaires, echo=T, eval=T}
+
+levels(Pok2001.2022$Station2)
 
 Malt=subset(Pok2001.2022, Station2=="Malt 11")
 dim(Malt) # 16 x 85
 summary(Malt$Date)
 
+Waugh=subset(Pok2001.2022, Station2=="Waugh sanct. 07")
+dim(Waugh)
 # ... faire de même pour les onze autres stations (pendant l'été 2024).
 
 ```
@@ -335,13 +339,14 @@ vendredi).
 ## Fluore
 
 
-```{r Fluoride, eval=F}
+```{r Fluoride, eval=T}
 
 # Lister les valeurs de la variable:
 Pok2001.2022$Fluoride_mg_L
 
 # Convertir les cas sous la limite de détection à la moitié de la limite:
 Pok2001.2022$Fluoride2_mg_L=ifelse(Pok2001.2022$Fluoride_mg_L==0.1, 0.05, Pok2001.2022$Fluoride_mg_L)
+summary(Pok2001.2022$Fluoride2_mg_L)
 class(Pok2001.2022$Fluoride2_mg_L)
 subset(Pok2001.2022, select=c(Station, Date, Fluoride_mg_L ,Fluoride2_mg_L))
 
@@ -369,6 +374,10 @@ ggplot(aes(y=Fluoride2_mg_L, x=Station2, fill=Period), data=Pok2001.2022) + geom
         axis.title=element_text(size=14,face="bold"))
 
 ```
+
+
+
+
 
 ### Fluore à Maltempec
 
@@ -697,4 +706,83 @@ ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Station2, fill=Period), data=Pok2001.2022)
 
 ```
 
+```{r, fig=T}
 
+levels(Pok2001.2022$Station2)
+levels(Pok2001.2022$Period)
+Period1=subset(Pok2001.2022, Period=="2001-2002")
+dim(Period1)
+Year2001=subset(Pok2001.2022, Year=="2001")
+dim(Year2001)
+levels(Pok2001.2022$Station2)
+
+subset(Pok2001.2022, select=c(Date, Station, Station2, Fluoride2_mg_L, Fluoride_mg_L))
+
+O2g1=ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date), data=Year2001) + 
+  geom_line(aes(color=Station2, linetype=Station2)) + 
+  geom_point(aes(color=Station2, shape=Station2)) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%B")
+#  date_minor_breaks = "1 week",
+O2g1
+
+# Les formes (shape) sont limitées à 6
+O2g2=ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date), data=Year2001) + 
+  geom_line(aes(color=Station2, linetype=Station2)) + 
+  geom_point(aes(color=Station2, shape=Station2)) +
+  scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", date_labels = "%B") +
+  theme_bw()
+O2g2
+
+# Date breaks:
+# an interval specification, one of "sec", "min", "hour", "day", "week", "month", "year"
+# https://www.rdocumentation.org/packages/scales/versions/1.3.0/topics/date_breaks
+
+
+# Modifier la syntaxe pour permettre plus de 6 formes 
+# grâce à "scale_shape_manual" selon
+# https://stackoverflow.com/questions/26223857/more-than-six-shapes-in-ggplot
+
+# Détermine le nombre de formes nécessaires:
+nlevels(Year2001$Station2)
+# 12
+
+O2g3=ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date, 
+                group=Station2, shape=Station2, color=Station2), data=Year2001) + 
+  scale_shape_manual(values=1:nlevels(Year2001$Station2)) +
+  geom_line() + 
+  geom_point() +
+  scale_x_date(date_labels = "%d %b", breaks=c(as.Date("2001-08-01"), as.Date("2001-09-01"),
+                                               as.Date("2001-10-01"), as.Date("2001-11-01"),
+                                               as.Date("2001-12-01"))) +
+  theme_bw()
+O2g3
+
+
+scale_y_date(date_labels = "%d %b", limits=c(as.Date("1904-09-22"),as.Date("1904-12-31")), breaks=c(as.Date("1904-09-25"), as.Date("1904-10-01"), as.Date("1904-10-07"),as.Date("1904-10-15"), as.Date("1904-10-21"), as.Date("1904-11-01"), as.Date("1904-11-15"), as.Date("1904-11-30"), as.Date("1904-12-31"))) 
+
+
+
+# Graphique de bas niveau: syntax simple, mais possibilités plus limitées
+# Plutôt que de créer 48 sous-tableaus (12 stations x 4 années), 
+# contrôler la fenêtre temporelle avec "xlim" pour chacune des 12 stations...
+
+plot( Malt$Oxyg_dissous_YSI_mg_L~Malt$Date, type="b",
+     xlim=c(as.Date("2001-07-01"),as.Date("2001-12-01")))
+# Ajouter une autre série de points avec "points"
+# et contrôler l'allure des courbes avec "col" (couleur),
+# "pch" (forme du symbol) et "lty" (line type).
+# "las" permet de faire pivoter les étiquettes de l'axe des x.
+points(Waugh$Oxyg_dissous_YSI_mg_L~Waugh$Date, type="b", col="blue", pch=2, lty=2)
+
+# Mieux contrôler les dates sur l'axe des X avec axis.Date
+
+plot(Malt$Oxyg_dissous_YSI_mg_L~Malt$Date, type="b",
+     xaxt = "n",
+     xlim=c(as.Date("2001-07-01"),as.Date("2001-12-01")))
+axis.Date(1,
+     at=seq(as.Date("2001-07-01"), as.Date("2001-12-01"), by="months"), format="%d %b", las=3)
+# Ajouter une autre série de points avec "points"
+points(Waugh$Oxyg_dissous_YSI_mg_L~Waugh$Date, type="b", col="blue", pch=2, lty=2)
+# Ajouter les autres stations avec d'autres lignes "points(...)"
+# Il faut ensuite construire la légende...
+```
