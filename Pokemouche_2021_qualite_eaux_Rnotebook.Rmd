@@ -12,7 +12,7 @@ editor_options:
 # Insertion de cette ligne pour tester git depuis le poste Linux maison 2024-04-04 soir.
 # Historique des versions de fichiers Excel.
 # Et encore depuis ASUS VivoBook 2024-04-06.
-
+# Edit online 2024-05-10
 ## Historique partie 1
 
 En février 2022, Jean-Luc m'envoie les fichiers de données suivants
