@@ -14,6 +14,8 @@ editor_options:
 # Encore un commentaire 2024-05-10 bb
 # Historique des versions de fichiers Excel
 
+# On est sur la branche "master" semble-t-il (Dell 2024-05-10)
+
 
 ## Historique partie 1
 
