@@ -381,7 +381,7 @@ ggplot(aes(y=Fluoride2_mg_L, x=Station2, fill=Period), data=Pok2001.2022) + geom
 
 ### Fluore à Maltempec
 
-```{r}
+```{r, eval=F}
 
 Fluore2001.2002=ggplot(aes(y=Fluoride2_mg_L, x=Date), data=Malt) + 
   geom_line(color="blue") + geom_point(color="blue", size=3) +
@@ -426,9 +426,9 @@ ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date, group=1), data=Malt) +
 
 ## Sulfate
 
-```{r Sulfate}
+```{r Sulfate, eval=FALSE}
 
-Pok2001.2022$Sulfate2_mg.L=ifelse(Pok2001.2022$Sulfate2_mg.L==1, 0.5, Pok2001.2022$Sulfate2_mg.L)
+Pok2001.2022$Sulfate2_mg.L=ifelse(Pok2001.2022$Sulfate_mg.L==1, 0.5, Pok2001.2022$Sulfate_mg.L)
 summary(Pok2001.2022$Sulfate2_mg.L)
 head(subset(Pok2001.2022,select=c(Sulfate_mg.L,Sulfate2_mg.L)))
 summary(Pok2001.2022$Sulfate2_mg.L)
@@ -446,11 +446,11 @@ ggplot(aes(y=Sulfate2_mg.L, x=Station2, fill=Period), data=Pok2001.2022) + geom_
 
 ## Ammonia (seulement en 2001 et 2002)
 
-```{r Ammonia}
+```{r Ammonia, eval=F}
+Pok2001.2022$Ammonia..as.N._mg.L
 
-
-Pok2001.2022$Ammonia2.N._mg.L=ifelse(Pok2001.2022$Ammonia2.N._mg.L==0.05, 0.025, Pok2001.2022$Ammonia2.N._mg.L)
-Pok2001.2022$Ammonia2.N._mg.L=ifelse(Pok2001.2022$Ammonia2.N._mg.L==0.01, 0.005, Pok2001.2022$Ammonia2.N._mg.L)
+Pok2001.2022$Ammonia2.N._mg.L=ifelse(Pok2001.2022$Ammonia..as.N._mg.L==0.05, 0.025, Pok2001.2022$Ammonia..as.N._mg.L)
+Pok2001.2022$Ammonia2.N._mg.L=ifelse(Pok2001.2022$Ammonia..as.N._mg.L==0.01, 0.005, Pok2001.2022$Ammonia..as.N._mg.L)
 subset(Pok2001.2022,select=c(Ammonia..as.N._mg.L,Ammonia2.N._mg.L))
 # sapply(Moncton, function(x)(sum(is.na(x)))) # NA counts
 # List cases where Ammonia is not lower than detection limit
@@ -706,18 +706,24 @@ ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Station2, fill=Period), data=Pok2001.2022)
 
 ```
 
+Bonjour Gaël: voici du code pour faire des graphiques des variations temporelles pour
+chaque stations. Je montre différentes approches. La plus adaptée est celle avec ggplot (O2g3).
+
 ```{r, fig=T}
 
 levels(Pok2001.2022$Station2)
 levels(Pok2001.2022$Period)
+# Créer un tableau avec les données de la période 1 seulement:
 Period1=subset(Pok2001.2022, Period=="2001-2002")
 dim(Period1)
+# Créer un tableau avec les données de 2001 seulement
 Year2001=subset(Pok2001.2022, Year=="2001")
 dim(Year2001)
 levels(Pok2001.2022$Station2)
 
-subset(Pok2001.2022, select=c(Date, Station, Station2, Fluoride2_mg_L, Fluoride_mg_L))
 
+# Les graphiques de haut niveau "ggplot" permettent de produire facilement
+# un graphiques avec plusieurs courbes (niveaux):
 O2g1=ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date), data=Year2001) + 
   geom_line(aes(color=Station2, linetype=Station2)) + 
   geom_point(aes(color=Station2, shape=Station2)) +
@@ -725,7 +731,7 @@ O2g1=ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date), data=Year2001) +
 #  date_minor_breaks = "1 week",
 O2g1
 
-# Les formes (shape) sont limitées à 6
+# Modifier, adapter l'axe des X (dates)
 O2g2=ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date), data=Year2001) + 
   geom_line(aes(color=Station2, linetype=Station2)) + 
   geom_point(aes(color=Station2, shape=Station2)) +
@@ -758,10 +764,6 @@ O2g3=ggplot(aes(y=Oxyg_dissous_YSI_mg_L, x=Date,
 O2g3
 
 
-scale_y_date(date_labels = "%d %b", limits=c(as.Date("1904-09-22"),as.Date("1904-12-31")), breaks=c(as.Date("1904-09-25"), as.Date("1904-10-01"), as.Date("1904-10-07"),as.Date("1904-10-15"), as.Date("1904-10-21"), as.Date("1904-11-01"), as.Date("1904-11-15"), as.Date("1904-11-30"), as.Date("1904-12-31"))) 
-
-
-
 # Graphique de bas niveau: syntax simple, mais possibilités plus limitées
 # Plutôt que de créer 48 sous-tableaus (12 stations x 4 années), 
 # contrôler la fenêtre temporelle avec "xlim" pour chacune des 12 stations...
@@ -785,4 +787,12 @@ axis.Date(1,
 points(Waugh$Oxyg_dissous_YSI_mg_L~Waugh$Date, type="b", col="blue", pch=2, lty=2)
 # Ajouter les autres stations avec d'autres lignes "points(...)"
 # Il faut ensuite construire la légende...
+
+# La fonction "scatterplot" permet facilement de représenter une association 
+# pour différents sous-groupes (ici, les stations), mais ne permet pas de
+# connecter les points...
+library("car")
+scatterplot(Period1$Oxyg_dissous_YSI_mg_L~Period1$Date | Period1$Station2,
+            smooth=F)
+
 ```
